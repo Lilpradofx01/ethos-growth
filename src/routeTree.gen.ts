@@ -9,18 +9,102 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as WithdrawRouteImport } from './routes/withdraw'
+import { Route as TransferRouteImport } from './routes/transfer'
+import { Route as TransactionsRouteImport } from './routes/transactions'
+import { Route as SupportRouteImport } from './routes/support'
+import { Route as StoreRouteImport } from './routes/store'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as SendRouteImport } from './routes/send'
+import { Route as SavingsRouteImport } from './routes/savings'
+import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as LoansRouteImport } from './routes/loans'
+import { Route as DepositRouteImport } from './routes/deposit'
+import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
+import { Route as CardsRouteImport } from './routes/cards'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AnalyticsRouteImport } from './routes/analytics'
 import { Route as IndexRouteImport } from './routes/index'
 
+const WithdrawRoute = WithdrawRouteImport.update({
+  id: '/withdraw',
+  path: '/withdraw',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransferRoute = TransferRouteImport.update({
+  id: '/transfer',
+  path: '/transfer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const StoreRoute = StoreRouteImport.update({
+  id: '/store',
+  path: '/store',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SendRoute = SendRouteImport.update({
+  id: '/send',
+  path: '/send',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavingsRoute = SavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoansRoute = LoansRouteImport.update({
+  id: '/loans',
+  path: '/loans',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DepositRoute = DepositRouteImport.update({
+  id: '/deposit',
+  path: '/deposit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ConfirmEmailRoute = ConfirmEmailRouteImport.update({
   id: '/confirm-email',
   path: '/confirm-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CardsRoute = CardsRouteImport.update({
+  id: '/cards',
+  path: '/cards',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AnalyticsRoute = AnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -31,36 +115,228 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/cards': typeof CardsRoute
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dashboard': typeof DashboardRoute
+  '/deposit': typeof DepositRoute
+  '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
+  '/savings': typeof SavingsRoute
+  '/send': typeof SendRoute
+  '/settings': typeof SettingsRoute
+  '/store': typeof StoreRoute
+  '/support': typeof SupportRoute
+  '/transactions': typeof TransactionsRoute
+  '/transfer': typeof TransferRoute
+  '/withdraw': typeof WithdrawRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/cards': typeof CardsRoute
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dashboard': typeof DashboardRoute
+  '/deposit': typeof DepositRoute
+  '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
+  '/savings': typeof SavingsRoute
+  '/send': typeof SendRoute
+  '/settings': typeof SettingsRoute
+  '/store': typeof StoreRoute
+  '/support': typeof SupportRoute
+  '/transactions': typeof TransactionsRoute
+  '/transfer': typeof TransferRoute
+  '/withdraw': typeof WithdrawRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/analytics': typeof AnalyticsRoute
   '/auth': typeof AuthRoute
+  '/cards': typeof CardsRoute
   '/confirm-email': typeof ConfirmEmailRoute
+  '/dashboard': typeof DashboardRoute
+  '/deposit': typeof DepositRoute
+  '/loans': typeof LoansRoute
+  '/notifications': typeof NotificationsRoute
+  '/savings': typeof SavingsRoute
+  '/send': typeof SendRoute
+  '/settings': typeof SettingsRoute
+  '/store': typeof StoreRoute
+  '/support': typeof SupportRoute
+  '/transactions': typeof TransactionsRoute
+  '/transfer': typeof TransferRoute
+  '/withdraw': typeof WithdrawRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/confirm-email'
+  fullPaths:
+    | '/'
+    | '/analytics'
+    | '/auth'
+    | '/cards'
+    | '/confirm-email'
+    | '/dashboard'
+    | '/deposit'
+    | '/loans'
+    | '/notifications'
+    | '/savings'
+    | '/send'
+    | '/settings'
+    | '/store'
+    | '/support'
+    | '/transactions'
+    | '/transfer'
+    | '/withdraw'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/confirm-email'
-  id: '__root__' | '/' | '/auth' | '/confirm-email'
+  to:
+    | '/'
+    | '/analytics'
+    | '/auth'
+    | '/cards'
+    | '/confirm-email'
+    | '/dashboard'
+    | '/deposit'
+    | '/loans'
+    | '/notifications'
+    | '/savings'
+    | '/send'
+    | '/settings'
+    | '/store'
+    | '/support'
+    | '/transactions'
+    | '/transfer'
+    | '/withdraw'
+  id:
+    | '__root__'
+    | '/'
+    | '/analytics'
+    | '/auth'
+    | '/cards'
+    | '/confirm-email'
+    | '/dashboard'
+    | '/deposit'
+    | '/loans'
+    | '/notifications'
+    | '/savings'
+    | '/send'
+    | '/settings'
+    | '/store'
+    | '/support'
+    | '/transactions'
+    | '/transfer'
+    | '/withdraw'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AnalyticsRoute: typeof AnalyticsRoute
   AuthRoute: typeof AuthRoute
+  CardsRoute: typeof CardsRoute
   ConfirmEmailRoute: typeof ConfirmEmailRoute
+  DashboardRoute: typeof DashboardRoute
+  DepositRoute: typeof DepositRoute
+  LoansRoute: typeof LoansRoute
+  NotificationsRoute: typeof NotificationsRoute
+  SavingsRoute: typeof SavingsRoute
+  SendRoute: typeof SendRoute
+  SettingsRoute: typeof SettingsRoute
+  StoreRoute: typeof StoreRoute
+  SupportRoute: typeof SupportRoute
+  TransactionsRoute: typeof TransactionsRoute
+  TransferRoute: typeof TransferRoute
+  WithdrawRoute: typeof WithdrawRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/withdraw': {
+      id: '/withdraw'
+      path: '/withdraw'
+      fullPath: '/withdraw'
+      preLoaderRoute: typeof WithdrawRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transfer': {
+      id: '/transfer'
+      path: '/transfer'
+      fullPath: '/transfer'
+      preLoaderRoute: typeof TransferRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/store': {
+      id: '/store'
+      path: '/store'
+      fullPath: '/store'
+      preLoaderRoute: typeof StoreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/send': {
+      id: '/send'
+      path: '/send'
+      fullPath: '/send'
+      preLoaderRoute: typeof SendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/savings': {
+      id: '/savings'
+      path: '/savings'
+      fullPath: '/savings'
+      preLoaderRoute: typeof SavingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/loans': {
+      id: '/loans'
+      path: '/loans'
+      fullPath: '/loans'
+      preLoaderRoute: typeof LoansRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/deposit': {
+      id: '/deposit'
+      path: '/deposit'
+      fullPath: '/deposit'
+      preLoaderRoute: typeof DepositRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/confirm-email': {
       id: '/confirm-email'
       path: '/confirm-email'
@@ -68,11 +344,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ConfirmEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/cards': {
+      id: '/cards'
+      path: '/cards'
+      fullPath: '/cards'
+      preLoaderRoute: typeof CardsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/analytics': {
+      id: '/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -87,8 +377,22 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AnalyticsRoute: AnalyticsRoute,
   AuthRoute: AuthRoute,
+  CardsRoute: CardsRoute,
   ConfirmEmailRoute: ConfirmEmailRoute,
+  DashboardRoute: DashboardRoute,
+  DepositRoute: DepositRoute,
+  LoansRoute: LoansRoute,
+  NotificationsRoute: NotificationsRoute,
+  SavingsRoute: SavingsRoute,
+  SendRoute: SendRoute,
+  SettingsRoute: SettingsRoute,
+  StoreRoute: StoreRoute,
+  SupportRoute: SupportRoute,
+  TransactionsRoute: TransactionsRoute,
+  TransferRoute: TransferRoute,
+  WithdrawRoute: WithdrawRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
