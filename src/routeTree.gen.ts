@@ -19,6 +19,7 @@ import { Route as SendRouteImport } from './routes/send'
 import { Route as SavingsRouteImport } from './routes/savings'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
+import { Route as InvestRouteImport } from './routes/invest'
 import { Route as DepositRouteImport } from './routes/deposit'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ConfirmEmailRouteImport } from './routes/confirm-email'
@@ -77,6 +78,11 @@ const LoansRoute = LoansRouteImport.update({
   path: '/loans',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InvestRoute = InvestRouteImport.update({
+  id: '/invest',
+  path: '/invest',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DepositRoute = DepositRouteImport.update({
   id: '/deposit',
   path: '/deposit',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/confirm-email': typeof ConfirmEmailRoute
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
+  '/invest': typeof InvestRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/savings': typeof SavingsRoute
@@ -140,6 +147,7 @@ export interface FileRoutesByTo {
   '/confirm-email': typeof ConfirmEmailRoute
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
+  '/invest': typeof InvestRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/savings': typeof SavingsRoute
@@ -160,6 +168,7 @@ export interface FileRoutesById {
   '/confirm-email': typeof ConfirmEmailRoute
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
+  '/invest': typeof InvestRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/savings': typeof SavingsRoute
@@ -181,6 +190,7 @@ export interface FileRouteTypes {
     | '/confirm-email'
     | '/dashboard'
     | '/deposit'
+    | '/invest'
     | '/loans'
     | '/notifications'
     | '/savings'
@@ -200,6 +210,7 @@ export interface FileRouteTypes {
     | '/confirm-email'
     | '/dashboard'
     | '/deposit'
+    | '/invest'
     | '/loans'
     | '/notifications'
     | '/savings'
@@ -219,6 +230,7 @@ export interface FileRouteTypes {
     | '/confirm-email'
     | '/dashboard'
     | '/deposit'
+    | '/invest'
     | '/loans'
     | '/notifications'
     | '/savings'
@@ -239,6 +251,7 @@ export interface RootRouteChildren {
   ConfirmEmailRoute: typeof ConfirmEmailRoute
   DashboardRoute: typeof DashboardRoute
   DepositRoute: typeof DepositRoute
+  InvestRoute: typeof InvestRoute
   LoansRoute: typeof LoansRoute
   NotificationsRoute: typeof NotificationsRoute
   SavingsRoute: typeof SavingsRoute
@@ -323,6 +336,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoansRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/invest': {
+      id: '/invest'
+      path: '/invest'
+      fullPath: '/invest'
+      preLoaderRoute: typeof InvestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/deposit': {
       id: '/deposit'
       path: '/deposit'
@@ -383,6 +403,7 @@ const rootRouteChildren: RootRouteChildren = {
   ConfirmEmailRoute: ConfirmEmailRoute,
   DashboardRoute: DashboardRoute,
   DepositRoute: DepositRoute,
+  InvestRoute: InvestRoute,
   LoansRoute: LoansRoute,
   NotificationsRoute: NotificationsRoute,
   SavingsRoute: SavingsRoute,
