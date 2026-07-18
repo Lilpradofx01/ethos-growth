@@ -15,6 +15,7 @@ import { AppProvider } from "@/context/app-context";
 import { CookieBanner } from "@/components/cookie-banner";
 import { WhatsAppFab } from "@/components/whatsapp-fab";
 import { Preloader } from "@/components/preloader";
+import { Toaster } from "sonner";
 
 function NotFoundComponent() {
   return (
@@ -128,6 +129,7 @@ function RootComponent() {
         <Outlet />
         <CookieBanner />
         <WhatsAppFab />
+        <Toaster position="top-center" richColors />
       </AppProvider>
     </QueryClientProvider>
   );
