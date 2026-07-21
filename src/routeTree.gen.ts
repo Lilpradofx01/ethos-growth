@@ -24,7 +24,6 @@ import { Route as PressRouteImport } from './routes/press'
 import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as LoansRouteImport } from './routes/loans'
 import { Route as InvestmentsRouteImport } from './routes/investments'
-import { Route as InvestRouteImport } from './routes/invest'
 import { Route as FeaturesRouteImport } from './routes/features'
 import { Route as DepositRouteImport } from './routes/deposit'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -115,11 +114,6 @@ const InvestmentsRoute = InvestmentsRouteImport.update({
   path: '/investments',
   getParentRoute: () => rootRouteImport,
 } as any)
-const InvestRoute = InvestRouteImport.update({
-  id: '/invest',
-  path: '/invest',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const FeaturesRoute = FeaturesRouteImport.update({
   id: '/features',
   path: '/features',
@@ -206,7 +200,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
   '/features': typeof FeaturesRoute
-  '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
@@ -238,7 +231,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
   '/features': typeof FeaturesRoute
-  '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
@@ -271,7 +263,6 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/deposit': typeof DepositRoute
   '/features': typeof FeaturesRoute
-  '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
   '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
@@ -305,7 +296,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deposit'
     | '/features'
-    | '/invest'
     | '/investments'
     | '/loans'
     | '/notifications'
@@ -337,7 +327,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deposit'
     | '/features'
-    | '/invest'
     | '/investments'
     | '/loans'
     | '/notifications'
@@ -369,7 +358,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/deposit'
     | '/features'
-    | '/invest'
     | '/investments'
     | '/loans'
     | '/notifications'
@@ -402,7 +390,6 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   DepositRoute: typeof DepositRoute
   FeaturesRoute: typeof FeaturesRoute
-  InvestRoute: typeof InvestRoute
   InvestmentsRoute: typeof InvestmentsRoute
   LoansRoute: typeof LoansRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -527,13 +514,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof InvestmentsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/invest': {
-      id: '/invest'
-      path: '/invest'
-      fullPath: '/invest'
-      preLoaderRoute: typeof InvestRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/features': {
       id: '/features'
       path: '/features'
@@ -650,7 +630,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   DepositRoute: DepositRoute,
   FeaturesRoute: FeaturesRoute,
-  InvestRoute: InvestRoute,
   InvestmentsRoute: InvestmentsRoute,
   LoansRoute: LoansRoute,
   NotificationsRoute: NotificationsRoute,
