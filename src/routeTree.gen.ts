@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WithdrawRouteImport } from './routes/withdraw'
 import { Route as TransfersRouteImport } from './routes/transfers'
 import { Route as TransferRouteImport } from './routes/transfer'
+import { Route as TransactionsRouteImport } from './routes/transactions'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as StoreRouteImport } from './routes/store'
@@ -52,6 +53,11 @@ const TransfersRoute = TransfersRouteImport.update({
 const TransferRoute = TransferRouteImport.update({
   id: '/transfer',
   path: '/transfer',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TransactionsRoute = TransactionsRouteImport.update({
+  id: '/transactions',
+  path: '/transactions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TermsRoute = TermsRouteImport.update({
@@ -212,6 +218,7 @@ export interface FileRoutesByFullPath {
   '/store': typeof StoreRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/transactions': typeof TransactionsRoute
   '/transfer': typeof TransferRoute
   '/transfers': typeof TransfersRoute
   '/withdraw': typeof WithdrawRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/store': typeof StoreRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/transactions': typeof TransactionsRoute
   '/transfer': typeof TransferRoute
   '/transfers': typeof TransfersRoute
   '/withdraw': typeof WithdrawRoute
@@ -275,6 +283,7 @@ export interface FileRoutesById {
   '/store': typeof StoreRoute
   '/support': typeof SupportRoute
   '/terms': typeof TermsRoute
+  '/transactions': typeof TransactionsRoute
   '/transfer': typeof TransferRoute
   '/transfers': typeof TransfersRoute
   '/withdraw': typeof WithdrawRoute
@@ -308,6 +317,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/support'
     | '/terms'
+    | '/transactions'
     | '/transfer'
     | '/transfers'
     | '/withdraw'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/support'
     | '/terms'
+    | '/transactions'
     | '/transfer'
     | '/transfers'
     | '/withdraw'
@@ -370,6 +381,7 @@ export interface FileRouteTypes {
     | '/store'
     | '/support'
     | '/terms'
+    | '/transactions'
     | '/transfer'
     | '/transfers'
     | '/withdraw'
@@ -402,6 +414,7 @@ export interface RootRouteChildren {
   StoreRoute: typeof StoreRoute
   SupportRoute: typeof SupportRoute
   TermsRoute: typeof TermsRoute
+  TransactionsRoute: typeof TransactionsRoute
   TransferRoute: typeof TransferRoute
   TransfersRoute: typeof TransfersRoute
   WithdrawRoute: typeof WithdrawRoute
@@ -428,6 +441,13 @@ declare module '@tanstack/react-router' {
       path: '/transfer'
       fullPath: '/transfer'
       preLoaderRoute: typeof TransferRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/transactions': {
+      id: '/transactions'
+      path: '/transactions'
+      fullPath: '/transactions'
+      preLoaderRoute: typeof TransactionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/terms': {
@@ -642,6 +662,7 @@ const rootRouteChildren: RootRouteChildren = {
   StoreRoute: StoreRoute,
   SupportRoute: SupportRoute,
   TermsRoute: TermsRoute,
+  TransactionsRoute: TransactionsRoute,
   TransferRoute: TransferRoute,
   TransfersRoute: TransfersRoute,
   WithdrawRoute: WithdrawRoute,
