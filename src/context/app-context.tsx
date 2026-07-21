@@ -34,15 +34,91 @@ export interface User {
   createdAt: string;
 }
 
+export type TxType =
+  | "transfer" | "send" | "deposit" | "withdraw" | "external_send"
+  | "vault" | "store" | "loan"
+  | "trade-open" | "trade-close"
+  | "invest-transfer"
+  | "savings-deposit" | "savings-auto" | "savings-withdraw"
+  | "goal-created" | "goal-completed"
+  | "loan-submitted" | "loan-approved" | "loan-declined"
+  | "loan-disbursed" | "loan-payment";
+
 export interface Tx {
   id: string;
-  type: "transfer" | "send" | "deposit" | "withdraw" | "external_send" | "vault" | "store" | "loan";
+  ref: string;
+  type: TxType;
   amount: number;
   from?: Wallet | "external";
   to?: Wallet | "external";
   status: "completed" | "pending" | "failed";
   note: string;
   at: string;
+  goalId?: string;
+  loanId?: string;
+  tradeId?: string;
+}
+
+export interface Trade {
+  id: string;
+  sym: string;
+  name: string;
+  side: "buy" | "sell";
+  qty: number;
+  openPrice: number;
+  openAt: string;
+  status: "open" | "closed";
+  closePrice?: number;
+  closeAt?: string;
+  pnl?: number;
+  pnlPct?: number;
+}
+
+export type GoalMode = "one-time" | "manual" | "daily" | "weekly" | "monthly";
+export type GoalStatus = "active" | "paused" | "completed" | "cancelled";
+export interface GoalHistory {
+  id: string; at: string; amount: number;
+  type: "deposit" | "withdraw" | "auto" | "auto-failed";
+}
+export interface Goal {
+  id: string;
+  name: string;
+  target: number;
+  dueDate?: string;
+  description?: string;
+  saved: number;
+  status: GoalStatus;
+  mode: GoalMode;
+  autoAmount?: number;
+  lastRunAt?: string;
+  createdAt: string;
+  history: GoalHistory[];
+}
+
+export type LoanStatus =
+  | "draft" | "submitted" | "under-review" | "additional-docs-required"
+  | "approved" | "declined" | "disbursed" | "closed";
+
+export interface DocRef { name: string; size: number; type: string; kind: string }
+
+export interface Loan {
+  id: string;
+  amount: number;
+  purpose: string;
+  termMonths: number;
+  apr: number;
+  status: LoanStatus;
+  reason?: string;
+  submittedAt: string;
+  disbursedAt?: string;
+  remaining: number;
+  monthlyPayment: number;
+  nextPaymentAt?: string;
+  payments: { at: string; amount: number }[];
+  personal: Record<string, string>;
+  finances: { monthlyIncome: number; monthlyExpenses: number; existingDebts: number; employment: string };
+  docs: { ids: DocRef[]; income: DocRef[]; address: DocRef[]; prevAddress: DocRef[] };
+  bank: { name: string; holder: string; routing: string; account: string };
 }
 
 export interface Vault {
@@ -81,6 +157,9 @@ const K = {
   tx: (id: string) => `cv.tx.${id}`,
   vaults: (id: string) => `cv.vaults.${id}`,
   notifs: (id: string) => `cv.notifs.${id}`,
+  trades: (id: string) => `cv.trades.${id}`,
+  goals: (id: string) => `cv.goals.${id}`,
+  loans: (id: string) => `cv.loans.${id}`,
   theme: "cv.theme",
   cookie: "cv.cookie",
 };
@@ -115,6 +194,9 @@ interface Ctx {
   txs: Tx[];
   vaults: Vault[];
   notifs: Notif[];
+  trades: Trade[];
+  goals: Goal[];
+  loans: Loan[];
   theme: "light" | "dark";
   toggleTheme: () => void;
   login: (email: string, pw: string) => Promise<User>;
@@ -129,6 +211,19 @@ interface Ctx {
   storePurchase: (item: string, amount: number) => Promise<void>;
   markAllNotifsRead: () => void;
   addFundsToInvest: (amount: number) => Promise<void>;
+  moveInvestToMain: (amount: number) => Promise<void>;
+  openTrade: (input: { sym: string; name: string; side: "buy" | "sell"; qty: number; price: number }) => Promise<void>;
+  closeTrade: (id: string, currentPrice: number) => Promise<void>;
+  createGoal: (input: Omit<Goal, "id" | "saved" | "status" | "createdAt" | "history"> & { initialDeposit?: number }) => Promise<Goal>;
+  fundGoal: (id: string, amount: number) => Promise<void>;
+  withdrawGoal: (id: string, amount: number) => Promise<void>;
+  editGoal: (id: string, patch: Partial<Goal>) => Promise<void>;
+  pauseGoal: (id: string) => Promise<void>;
+  resumeGoal: (id: string) => Promise<void>;
+  deleteGoal: (id: string) => Promise<void>;
+  submitLoan: (input: Omit<Loan, "id" | "status" | "submittedAt" | "remaining" | "monthlyPayment" | "payments" | "apr">) => Promise<Loan>;
+  repayLoan: (id: string, amount: number) => Promise<void>;
+  payoffLoan: (id: string) => Promise<void>;
 }
 
 const AppCtx = createContext<Ctx | null>(null);
