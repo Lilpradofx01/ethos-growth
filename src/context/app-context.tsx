@@ -329,6 +329,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTxs(ls(K.tx(u.id), []));
     setVaults(ls(K.vaults(u.id), []));
     setNotifs(ls(K.notifs(u.id), []));
+    setTrades(ls(K.trades(u.id), []));
+    setGoals(ls(K.goals(u.id), []));
+    setLoans(ls(K.loans(u.id), []));
     return u;
   };
 
@@ -494,7 +497,356 @@ export function AppProvider({ children }: { children: ReactNode }) {
       },
     };
     persistUser(next);
-    pushTx(next, { type: "transfer", amount, from: "main", to: "investment", status: "completed", note: "Added funds to investment" });
+    pushTx(next, { type: "invest-transfer", amount, from: "main", to: "investment", status: "completed", note: "Main → Investment" });
+  };
+
+  const moveInvestToMain: Ctx["moveInvestToMain"] = async (amount) => {
+    if (!user) throw new Error("Not signed in");
+    if (amount <= 0) throw new Error("Enter a valid amount");
+    if (user.balances.investment < amount) throw new Error("Insufficient investment balance");
+    const next: User = {
+      ...user,
+      balances: {
+        ...user.balances,
+        investment: user.balances.investment - amount,
+        main: user.balances.main + amount,
+      },
+    };
+    persistUser(next);
+    pushTx(next, { type: "invest-transfer", amount, from: "investment", to: "main", status: "completed", note: "Investment → Main" });
+  };
+
+  const openTrade: Ctx["openTrade"] = async ({ sym, name, side, qty, price }) => {
+    if (!user) throw new Error("Not signed in");
+    if (qty <= 0) throw new Error("Quantity must be greater than 0");
+    const cost = qty * price;
+    if (user.balances.investment < cost) throw new Error("Insufficient investment cash. Move funds from Main first.");
+    const next: User = {
+      ...user,
+      balances: { ...user.balances, investment: user.balances.investment - cost },
+    };
+    persistUser(next);
+    const t: Trade = {
+      id: crypto.randomUUID(), sym, name, side, qty, openPrice: price,
+      openAt: new Date().toISOString(), status: "open",
+    };
+    persistTrades(next.id, [t, ...ls<Trade[]>(K.trades(next.id), [])]);
+    pushTx(next, { type: "trade-open", amount: cost, from: "investment", status: "completed", note: `${side.toUpperCase()} ${qty} ${sym} @ $${price.toFixed(2)}`, tradeId: t.id });
+  };
+
+  const closeTrade: Ctx["closeTrade"] = async (id, currentPrice) => {
+    if (!user) throw new Error("Not signed in");
+    const all = ls<Trade[]>(K.trades(user.id), []);
+    const t = all.find((x) => x.id === id);
+    if (!t || t.status !== "open") throw new Error("Trade not found");
+    const gross = t.qty * currentPrice;
+    const cost = t.qty * t.openPrice;
+    const rawPnl = gross - cost;
+    // Buy: profit when price rose. Sell (short): profit when price fell.
+    const pnl = t.side === "buy" ? rawPnl : -rawPnl;
+    const pnlPct = (pnl / cost) * 100;
+    const proceeds = cost + pnl; // return principal + realized pnl to investment cash
+    const closed: Trade = {
+      ...t, status: "closed", closePrice: currentPrice,
+      closeAt: new Date().toISOString(), pnl, pnlPct,
+    };
+    const nextTrades = all.map((x) => (x.id === id ? closed : x));
+    const nextUser: User = {
+      ...user,
+      balances: { ...user.balances, investment: user.balances.investment + Math.max(0, proceeds) },
+    };
+    persistUser(nextUser);
+    persistTrades(nextUser.id, nextTrades);
+    pushTx(nextUser, {
+      type: "trade-close", amount: Math.abs(pnl),
+      to: "investment",
+      status: pnl >= 0 ? "completed" : "failed",
+      note: `Closed ${t.side.toUpperCase()} ${t.qty} ${t.sym} · ${pnl >= 0 ? "+" : "-"}$${Math.abs(pnl).toFixed(2)} (${pnlPct.toFixed(2)}%)`,
+      tradeId: t.id,
+    });
+    pushNotif(nextUser, {
+      title: pnl >= 0 ? "Trade closed — profit" : "Trade closed — loss",
+      message: `${t.sym}: ${pnl >= 0 ? "+" : "-"}$${Math.abs(pnl).toFixed(2)} (${pnlPct.toFixed(2)}%)`,
+    });
+  };
+
+  const createGoal: Ctx["createGoal"] = async (input) => {
+    if (!user) throw new Error("Not signed in");
+    if (!input.name.trim()) throw new Error("Give your goal a name");
+    if (input.target <= 0) throw new Error("Target must be greater than 0");
+    const goal: Goal = {
+      id: crypto.randomUUID(),
+      name: input.name.trim(),
+      target: input.target,
+      dueDate: input.dueDate,
+      description: input.description,
+      mode: input.mode,
+      autoAmount: input.autoAmount,
+      saved: 0,
+      status: "active",
+      createdAt: new Date().toISOString(),
+      lastRunAt: new Date().toISOString(),
+      history: [],
+    };
+    let nextUser = user;
+    let nextGoal = goal;
+    if (input.mode === "one-time") {
+      if (user.balances.main < input.target) throw new Error("Insufficient main balance for one-time deposit");
+      nextUser = { ...user, balances: { ...user.balances, main: user.balances.main - input.target } };
+      nextGoal = {
+        ...goal, saved: input.target, status: "completed",
+        history: [{ id: crypto.randomUUID(), at: new Date().toISOString(), amount: input.target, type: "deposit" }],
+      };
+    } else if (input.initialDeposit && input.initialDeposit > 0) {
+      if (user.balances.main < input.initialDeposit) throw new Error("Insufficient main balance");
+      nextUser = { ...user, balances: { ...user.balances, main: user.balances.main - input.initialDeposit, savings: user.balances.savings + input.initialDeposit } };
+      nextGoal = {
+        ...goal, saved: input.initialDeposit,
+        history: [{ id: crypto.randomUUID(), at: new Date().toISOString(), amount: input.initialDeposit, type: "deposit" }],
+      };
+    }
+    if (input.mode !== "one-time") {
+      nextUser = { ...nextUser, balances: { ...nextUser.balances, savings: nextUser.balances.savings + (nextGoal.saved - goal.saved) } };
+    }
+    persistUser(nextUser);
+    persistGoals(nextUser.id, [nextGoal, ...ls<Goal[]>(K.goals(nextUser.id), [])]);
+    pushTx(nextUser, { type: "goal-created", amount: input.target, status: "completed", note: `Goal created: ${goal.name}`, goalId: goal.id });
+    if (nextGoal.status === "completed") {
+      pushTx(nextUser, { type: "goal-completed", amount: nextGoal.saved, status: "completed", note: `Goal completed: ${goal.name}`, goalId: goal.id });
+      pushNotif(nextUser, { title: "Savings goal completed", message: `${goal.name} funded fully.` });
+    }
+    return nextGoal;
+  };
+
+  const fundGoal: Ctx["fundGoal"] = async (id, amount) => {
+    if (!user) throw new Error("Not signed in");
+    if (amount <= 0) throw new Error("Enter a valid amount");
+    if (user.balances.main < amount) throw new Error("Insufficient main balance");
+    const all = ls<Goal[]>(K.goals(user.id), []);
+    const g = all.find((x) => x.id === id);
+    if (!g) throw new Error("Goal not found");
+    if (g.status === "completed" || g.status === "cancelled") throw new Error("Goal not active");
+    const add = Math.min(amount, g.target - g.saved);
+    const nextUser: User = {
+      ...user,
+      balances: { ...user.balances, main: user.balances.main - add, savings: user.balances.savings + add },
+    };
+    const updated: Goal = {
+      ...g,
+      saved: g.saved + add,
+      status: g.saved + add >= g.target ? "completed" : g.status,
+      history: [{ id: crypto.randomUUID(), at: new Date().toISOString(), amount: add, type: "deposit" }, ...g.history],
+    };
+    persistUser(nextUser);
+    persistGoals(nextUser.id, all.map((x) => (x.id === id ? updated : x)));
+    pushTx(nextUser, { type: "savings-deposit", amount: add, from: "main", to: "savings", status: "completed", note: `Funded goal: ${g.name}`, goalId: g.id });
+    if (updated.status === "completed") {
+      pushTx(nextUser, { type: "goal-completed", amount: updated.saved, status: "completed", note: `Goal completed: ${g.name}`, goalId: g.id });
+      pushNotif(nextUser, { title: "Savings goal completed", message: `${g.name} reached its target.` });
+    }
+  };
+
+  const withdrawGoal: Ctx["withdrawGoal"] = async (id, amount) => {
+    if (!user) throw new Error("Not signed in");
+    if (amount <= 0) throw new Error("Enter a valid amount");
+    const all = ls<Goal[]>(K.goals(user.id), []);
+    const g = all.find((x) => x.id === id);
+    if (!g) throw new Error("Goal not found");
+    if (amount > g.saved) throw new Error("Insufficient saved amount");
+    const nextUser: User = {
+      ...user,
+      balances: { ...user.balances, main: user.balances.main + amount, savings: Math.max(0, user.balances.savings - amount) },
+    };
+    const updated: Goal = {
+      ...g,
+      saved: g.saved - amount,
+      status: g.status === "completed" && g.saved - amount < g.target ? "active" : g.status,
+      history: [{ id: crypto.randomUUID(), at: new Date().toISOString(), amount, type: "withdraw" }, ...g.history],
+    };
+    persistUser(nextUser);
+    persistGoals(nextUser.id, all.map((x) => (x.id === id ? updated : x)));
+    pushTx(nextUser, { type: "savings-withdraw", amount, from: "savings", to: "main", status: "completed", note: `Withdrew from goal: ${g.name}`, goalId: g.id });
+  };
+
+  const editGoal: Ctx["editGoal"] = async (id, patch) => {
+    if (!user) throw new Error("Not signed in");
+    const all = ls<Goal[]>(K.goals(user.id), []);
+    const next = all.map((g) => (g.id === id ? { ...g, ...patch } : g));
+    persistGoals(user.id, next);
+  };
+  const pauseGoal: Ctx["pauseGoal"] = async (id) => editGoal(id, { status: "paused" });
+  const resumeGoal: Ctx["resumeGoal"] = async (id) => editGoal(id, { status: "active" });
+  const deleteGoal: Ctx["deleteGoal"] = async (id) => {
+    if (!user) throw new Error("Not signed in");
+    const all = ls<Goal[]>(K.goals(user.id), []);
+    const g = all.find((x) => x.id === id);
+    if (g && g.saved > 0) {
+      // Return remaining to main
+      const nextUser: User = {
+        ...user,
+        balances: { ...user.balances, main: user.balances.main + g.saved, savings: Math.max(0, user.balances.savings - g.saved) },
+      };
+      persistUser(nextUser);
+      pushTx(nextUser, { type: "savings-withdraw", amount: g.saved, from: "savings", to: "main", status: "completed", note: `Goal deleted, returned to main: ${g.name}`, goalId: g.id });
+    }
+    persistGoals(user.id, all.filter((x) => x.id !== id));
+  };
+
+  // Automatic savings runner (real cadences)
+  useEffect(() => {
+    if (!user) return;
+    const CADENCE: Record<GoalMode, number> = {
+      "one-time": 0, manual: 0,
+      daily: 86_400_000, weekly: 604_800_000, monthly: 2_592_000_000,
+    };
+    const tick = () => {
+      const all = ls<Goal[]>(K.goals(user.id), []);
+      const current = loadUsers()[user.id];
+      if (!current) return;
+      let bal = { ...current.balances };
+      let changed = false;
+      const nextGoals = all.map((g) => {
+        if (g.status !== "active") return g;
+        const cadence = CADENCE[g.mode];
+        if (!cadence || !g.autoAmount) return g;
+        const last = g.lastRunAt ? new Date(g.lastRunAt).getTime() : Date.now();
+        if (Date.now() - last < cadence) return g;
+        const need = Math.min(g.autoAmount, g.target - g.saved);
+        if (need <= 0) return g;
+        if (bal.main < need) {
+          changed = true;
+          const failed: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto-failed" };
+          pushNotif(current, { title: "Auto-save skipped", message: `${g.name}: insufficient main balance.` });
+          return { ...g, history: [failed, ...g.history] };
+        }
+        bal = { ...bal, main: bal.main - need, savings: bal.savings + need };
+        changed = true;
+        const entry: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto" };
+        const nextSaved = g.saved + need;
+        const completed = nextSaved >= g.target;
+        pushTx({ ...current, balances: bal }, { type: "savings-auto", amount: need, from: "main", to: "savings", status: "completed", note: `Auto-save: ${g.name}`, goalId: g.id });
+        if (completed) {
+          pushTx({ ...current, balances: bal }, { type: "goal-completed", amount: nextSaved, status: "completed", note: `Goal completed: ${g.name}`, goalId: g.id });
+          pushNotif(current, { title: "Savings goal completed", message: `${g.name} reached its target.` });
+        }
+        return { ...g, saved: nextSaved, lastRunAt: new Date().toISOString(), status: completed ? "completed" as GoalStatus : g.status, history: [entry, ...g.history] };
+      });
+      if (changed) {
+        persistUser({ ...current, balances: bal });
+        persistGoals(user.id, nextGoals);
+      }
+    };
+    const id = setInterval(tick, 30_000);
+    tick();
+    return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
+
+  const submitLoan: Ctx["submitLoan"] = async (input) => {
+    if (!user) throw new Error("Not signed in");
+    const existing = ls<Loan[]>(K.loans(user.id), []);
+    if (existing.some((l) => ["submitted", "under-review", "approved"].includes(l.status))) {
+      throw new Error("You already have a pending loan application");
+    }
+    if (input.docs.ids.length < 2) throw new Error("Upload at least two identity documents");
+    if (input.docs.income.length < 1) throw new Error("Upload at least one income document");
+    if (input.docs.address.length < 1) throw new Error("Upload at least one address document");
+    if (!input.bank.name || !input.bank.account) throw new Error("Bank details required");
+    const apr = 12;
+    const r = apr / 100 / 12;
+    const monthlyPayment = +((input.amount * r) / (1 - Math.pow(1 + r, -input.termMonths))).toFixed(2);
+    const loan: Loan = {
+      id: crypto.randomUUID(),
+      amount: input.amount,
+      purpose: input.purpose,
+      termMonths: input.termMonths,
+      apr,
+      status: "submitted",
+      submittedAt: new Date().toISOString(),
+      remaining: input.amount,
+      monthlyPayment,
+      payments: [],
+      personal: input.personal,
+      finances: input.finances,
+      docs: input.docs,
+      bank: input.bank,
+    };
+    persistLoans(user.id, [loan, ...existing]);
+    pushTx(user, { type: "loan-submitted", amount: input.amount, status: "pending", note: `Loan application — $${input.amount}`, loanId: loan.id });
+    pushNotif(user, { title: "Loan application received", message: "We're reviewing your submission." });
+    // Simulated review pipeline
+    setTimeout(() => {
+      const cur = loadUsers()[user.id];
+      if (!cur) return;
+      const all = ls<Loan[]>(K.loans(cur.id), []);
+      const idx = all.findIndex((l) => l.id === loan.id);
+      if (idx < 0) return;
+      all[idx] = { ...all[idx], status: "under-review" };
+      persistLoans(cur.id, all);
+      pushNotif(cur, { title: "Loan under review", message: "Underwriting has started on your application." });
+    }, 4000);
+    setTimeout(() => {
+      const cur = loadUsers()[user.id];
+      if (!cur) return;
+      const all = ls<Loan[]>(K.loans(cur.id), []);
+      const idx = all.findIndex((l) => l.id === loan.id);
+      if (idx < 0) return;
+      const l = all[idx];
+      const dti = l.finances.monthlyIncome > 0
+        ? (l.finances.monthlyExpenses + l.finances.existingDebts + l.monthlyPayment) / l.finances.monthlyIncome
+        : 1;
+      const incomeOk = l.finances.monthlyIncome >= l.monthlyPayment * 2;
+      if (!incomeOk || dti > 0.5) {
+        all[idx] = { ...l, status: "declined", reason: "Income to debt ratio too high" };
+        persistLoans(cur.id, all);
+        pushTx(cur, { type: "loan-declined", amount: l.amount, status: "failed", note: `Loan declined — ${all[idx].reason}`, loanId: l.id });
+        pushNotif(cur, { title: "Loan declined", message: all[idx].reason! });
+        return;
+      }
+      const next = new Date(); next.setMonth(next.getMonth() + 1);
+      const disbursed: Loan = {
+        ...l, status: "disbursed", disbursedAt: new Date().toISOString(),
+        nextPaymentAt: next.toISOString(),
+      };
+      all[idx] = disbursed;
+      persistLoans(cur.id, all);
+      const withFunds: User = { ...cur, balances: { ...cur.balances, main: cur.balances.main + l.amount } };
+      persistUser(withFunds);
+      pushTx(withFunds, { type: "loan-approved", amount: l.amount, status: "completed", note: `Loan approved — $${l.amount}`, loanId: l.id });
+      pushTx(withFunds, { type: "loan-disbursed", amount: l.amount, to: "main", status: "completed", note: `Loan disbursed to main`, loanId: l.id });
+      pushNotif(withFunds, { title: "Loan approved & disbursed", message: `$${l.amount} deposited to your Main account.` });
+    }, 10000);
+    return loan;
+  };
+
+  const repayLoan: Ctx["repayLoan"] = async (id, amount) => {
+    if (!user) throw new Error("Not signed in");
+    if (amount <= 0) throw new Error("Enter a valid amount");
+    if (user.balances.main < amount) throw new Error("Insufficient main balance");
+    const all = ls<Loan[]>(K.loans(user.id), []);
+    const l = all.find((x) => x.id === id);
+    if (!l || l.status !== "disbursed") throw new Error("Loan not active");
+    const pay = Math.min(amount, l.remaining);
+    const nextUser: User = { ...user, balances: { ...user.balances, main: user.balances.main - pay } };
+    const next = new Date(); next.setMonth(next.getMonth() + 1);
+    const updated: Loan = {
+      ...l,
+      remaining: +(l.remaining - pay).toFixed(2),
+      payments: [{ at: new Date().toISOString(), amount: pay }, ...l.payments],
+      nextPaymentAt: l.remaining - pay <= 0 ? undefined : next.toISOString(),
+      status: l.remaining - pay <= 0 ? "closed" : l.status,
+    };
+    persistUser(nextUser);
+    persistLoans(nextUser.id, all.map((x) => (x.id === id ? updated : x)));
+    pushTx(nextUser, { type: "loan-payment", amount: pay, from: "main", status: "completed", note: `Loan payment${updated.status === "closed" ? " (paid off)" : ""}`, loanId: l.id });
+    pushNotif(nextUser, { title: "Payment received", message: `$${pay.toFixed(2)} applied to your loan.` });
+  };
+
+  const payoffLoan: Ctx["payoffLoan"] = async (id) => {
+    if (!user) throw new Error("Not signed in");
+    const l = ls<Loan[]>(K.loans(user.id), []).find((x) => x.id === id);
+    if (!l) throw new Error("Loan not found");
+    return repayLoan(id, l.remaining);
   };
 
   const value = useMemo<Ctx>(
@@ -504,6 +856,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       txs,
       vaults,
       notifs,
+      trades,
+      goals,
+      loans,
       theme,
       toggleTheme,
       login,
@@ -518,9 +873,22 @@ export function AppProvider({ children }: { children: ReactNode }) {
       storePurchase,
       markAllNotifsRead,
       addFundsToInvest,
+      moveInvestToMain,
+      openTrade,
+      closeTrade,
+      createGoal,
+      fundGoal,
+      withdrawGoal,
+      editGoal,
+      pauseGoal,
+      resumeGoal,
+      deleteGoal,
+      submitLoan,
+      repayLoan,
+      payoffLoan,
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, ready, txs, vaults, notifs, theme],
+    [user, ready, txs, vaults, notifs, trades, goals, loans, theme],
   );
 
   return <AppCtx.Provider value={value}>{children}</AppCtx.Provider>;
