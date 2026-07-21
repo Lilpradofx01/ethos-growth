@@ -18,6 +18,7 @@ import { Route as SupportRouteImport } from './routes/support'
 import { Route as StoreRouteImport } from './routes/store'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SendRouteImport } from './routes/send'
+import { Route as SavingsRouteImport } from './routes/savings'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PressRouteImport } from './routes/press'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -82,6 +83,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const SendRoute = SendRouteImport.update({
   id: '/send',
   path: '/send',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SavingsRoute = SavingsRouteImport.update({
+  id: '/savings',
+  path: '/savings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -206,6 +212,7 @@ export interface FileRoutesByFullPath {
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
+  '/savings': typeof SavingsRoute
   '/send': typeof SendRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -237,6 +244,7 @@ export interface FileRoutesByTo {
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
+  '/savings': typeof SavingsRoute
   '/send': typeof SendRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -269,6 +277,7 @@ export interface FileRoutesById {
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
+  '/savings': typeof SavingsRoute
   '/send': typeof SendRoute
   '/settings': typeof SettingsRoute
   '/store': typeof StoreRoute
@@ -302,6 +311,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/press'
     | '/privacy'
+    | '/savings'
     | '/send'
     | '/settings'
     | '/store'
@@ -333,6 +343,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/press'
     | '/privacy'
+    | '/savings'
     | '/send'
     | '/settings'
     | '/store'
@@ -364,6 +375,7 @@ export interface FileRouteTypes {
     | '/notifications'
     | '/press'
     | '/privacy'
+    | '/savings'
     | '/send'
     | '/settings'
     | '/store'
@@ -396,6 +408,7 @@ export interface RootRouteChildren {
   NotificationsRoute: typeof NotificationsRoute
   PressRoute: typeof PressRoute
   PrivacyRoute: typeof PrivacyRoute
+  SavingsRoute: typeof SavingsRoute
   SendRoute: typeof SendRoute
   SettingsRoute: typeof SettingsRoute
   StoreRoute: typeof StoreRoute
@@ -470,6 +483,13 @@ declare module '@tanstack/react-router' {
       path: '/send'
       fullPath: '/send'
       preLoaderRoute: typeof SendRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/savings': {
+      id: '/savings'
+      path: '/savings'
+      fullPath: '/savings'
+      preLoaderRoute: typeof SavingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -636,6 +656,7 @@ const rootRouteChildren: RootRouteChildren = {
   NotificationsRoute: NotificationsRoute,
   PressRoute: PressRoute,
   PrivacyRoute: PrivacyRoute,
+  SavingsRoute: SavingsRoute,
   SendRoute: SendRoute,
   SettingsRoute: SettingsRoute,
   StoreRoute: StoreRoute,
