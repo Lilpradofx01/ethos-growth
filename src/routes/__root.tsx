@@ -85,10 +85,14 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { title: "CrestVest Inc. — Premium Digital Banking & Investments" },
       { name: "description", content: "CrestVest Inc. is a premium digital banking and investment platform. Send money, grow your wealth, and manage your finances in one place." },
       { name: "author", content: "CrestVest Inc." },
-      { property: "og:title", content: "CrestVest Inc. — Premium Digital Banking" },
-      { property: "og:description", content: "Bank, save, and invest with CrestVest — built for the modern global economy." },
+      { property: "og:title", content: "CrestVest Inc. — Premium Digital Banking & Investments" },
+      { property: "og:description", content: "CrestVest Inc. is a premium digital banking and investment platform. Send money, grow your wealth, and manage your finances in one place." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:title", content: "CrestVest Inc. — Premium Digital Banking & Investments" },
+      { name: "twitter:description", content: "CrestVest Inc. is a premium digital banking and investment platform. Send money, grow your wealth, and manage your finances in one place." },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cf410bd-7878-4474-b2fa-e7286c870b28/id-preview-793eae44--ef0cc53b-0e49-44b7-9951-1a732ff25ffb.lovable.app-1784656838646.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/3cf410bd-7878-4474-b2fa-e7286c870b28/id-preview-793eae44--ef0cc53b-0e49-44b7-9951-1a732ff25ffb.lovable.app-1784656838646.png" },
     ],
     links: [
       {
