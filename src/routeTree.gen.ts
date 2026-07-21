@@ -22,7 +22,6 @@ import { Route as SavingsRouteImport } from './routes/savings'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PressRouteImport } from './routes/press'
 import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as LoansRouteImport } from './routes/loans'
 import { Route as InvestmentsRouteImport } from './routes/investments'
 import { Route as InvestRouteImport } from './routes/invest'
 import { Route as FeaturesRouteImport } from './routes/features'
@@ -103,11 +102,6 @@ const PressRoute = PressRouteImport.update({
 const NotificationsRoute = NotificationsRouteImport.update({
   id: '/notifications',
   path: '/notifications',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LoansRoute = LoansRouteImport.update({
-  id: '/loans',
-  path: '/loans',
   getParentRoute: () => rootRouteImport,
 } as any)
 const InvestmentsRoute = InvestmentsRouteImport.update({
@@ -208,7 +202,6 @@ export interface FileRoutesByFullPath {
   '/features': typeof FeaturesRoute
   '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
-  '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
@@ -240,7 +233,6 @@ export interface FileRoutesByTo {
   '/features': typeof FeaturesRoute
   '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
-  '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
@@ -273,7 +265,6 @@ export interface FileRoutesById {
   '/features': typeof FeaturesRoute
   '/invest': typeof InvestRoute
   '/investments': typeof InvestmentsRoute
-  '/loans': typeof LoansRoute
   '/notifications': typeof NotificationsRoute
   '/press': typeof PressRoute
   '/privacy': typeof PrivacyRoute
@@ -307,7 +298,6 @@ export interface FileRouteTypes {
     | '/features'
     | '/invest'
     | '/investments'
-    | '/loans'
     | '/notifications'
     | '/press'
     | '/privacy'
@@ -339,7 +329,6 @@ export interface FileRouteTypes {
     | '/features'
     | '/invest'
     | '/investments'
-    | '/loans'
     | '/notifications'
     | '/press'
     | '/privacy'
@@ -371,7 +360,6 @@ export interface FileRouteTypes {
     | '/features'
     | '/invest'
     | '/investments'
-    | '/loans'
     | '/notifications'
     | '/press'
     | '/privacy'
@@ -404,7 +392,6 @@ export interface RootRouteChildren {
   FeaturesRoute: typeof FeaturesRoute
   InvestRoute: typeof InvestRoute
   InvestmentsRoute: typeof InvestmentsRoute
-  LoansRoute: typeof LoansRoute
   NotificationsRoute: typeof NotificationsRoute
   PressRoute: typeof PressRoute
   PrivacyRoute: typeof PrivacyRoute
@@ -511,13 +498,6 @@ declare module '@tanstack/react-router' {
       path: '/notifications'
       fullPath: '/notifications'
       preLoaderRoute: typeof NotificationsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/loans': {
-      id: '/loans'
-      path: '/loans'
-      fullPath: '/loans'
-      preLoaderRoute: typeof LoansRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/investments': {
@@ -652,7 +632,6 @@ const rootRouteChildren: RootRouteChildren = {
   FeaturesRoute: FeaturesRoute,
   InvestRoute: InvestRoute,
   InvestmentsRoute: InvestmentsRoute,
-  LoansRoute: LoansRoute,
   NotificationsRoute: NotificationsRoute,
   PressRoute: PressRoute,
   PrivacyRoute: PrivacyRoute,
