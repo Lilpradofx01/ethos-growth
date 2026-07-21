@@ -234,6 +234,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [txs, setTxs] = useState<Tx[]>([]);
   const [vaults, setVaults] = useState<Vault[]>([]);
   const [notifs, setNotifs] = useState<Notif[]>([]);
+  const [trades, setTrades] = useState<Trade[]>([]);
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [loans, setLoans] = useState<Loan[]>([]);
   const [theme, setTheme] = useState<"light" | "dark">("light");
 
   useEffect(() => {
@@ -252,6 +255,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setTxs(ls(K.tx(u.id), []));
         setVaults(ls(K.vaults(u.id), []));
         setNotifs(ls(K.notifs(u.id), []));
+        setTrades(ls(K.trades(u.id), []));
+        setGoals(ls(K.goals(u.id), []));
+        setLoans(ls(K.loans(u.id), []));
       }
     }
     setReady(true);
@@ -276,9 +282,28 @@ export function AppProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(K.notifs(id), JSON.stringify(next));
     setNotifs(next);
   }, []);
+  const persistTrades = useCallback((id: string, next: Trade[]) => {
+    localStorage.setItem(K.trades(id), JSON.stringify(next));
+    setTrades(next);
+  }, []);
+  const persistGoals = useCallback((id: string, next: Goal[]) => {
+    localStorage.setItem(K.goals(id), JSON.stringify(next));
+    setGoals(next);
+  }, []);
+  const persistLoans = useCallback((id: string, next: Loan[]) => {
+    localStorage.setItem(K.loans(id), JSON.stringify(next));
+    setLoans(next);
+  }, []);
 
-  const pushTx = (u: User, tx: Omit<Tx, "id" | "at">) => {
-    const next = [{ ...tx, id: crypto.randomUUID(), at: new Date().toISOString() }, ...ls<Tx[]>(K.tx(u.id), [])];
+  const shortRef = () => "CV-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+  const pushTx = (u: User, tx: Omit<Tx, "id" | "at" | "ref"> & { ref?: string }) => {
+    const entry: Tx = {
+      ...tx,
+      ref: tx.ref ?? shortRef(),
+      id: crypto.randomUUID(),
+      at: new Date().toISOString(),
+    };
+    const next = [entry, ...ls<Tx[]>(K.tx(u.id), [])];
     persistTx(u.id, next);
   };
   const pushNotif = (u: User, n: Omit<Notif, "id" | "at" | "read">) => {
@@ -350,6 +375,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setTxs([]);
     setVaults([]);
     setNotifs([]);
+    setTrades([]);
+    setGoals([]);
+    setLoans([]);
   };
 
   const internalTransfer: Ctx["internalTransfer"] = async (from, to, amount) => {
