@@ -426,16 +426,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const externalSend: Ctx["externalSend"] = async (recipient, bank, userEmail, amount) => {
     if (!user) throw new Error("Not signed in");
     if (userEmail.toLowerCase() !== user.email) throw new Error("Email must match your account email");
-    // Simulate: fails after 10s (caller handles the wait). Balance untouched.
+    // Record as pending; a future admin/backend flow will finalize.
     pushTx(user, {
       type: "external_send",
       amount,
       from: "main",
       to: "external",
-      status: "failed",
-      note: `External transfer to ${recipient} (${bank}) — cancelled`,
+      status: "pending",
+      note: `External transfer to ${recipient} (${bank}) — pending review`,
     });
-    pushNotif(user, { title: "Transaction Failed", message: `External send of $${amount} to ${recipient} was cancelled. Contact support.` });
+    pushNotif(user, {
+      title: "External transfer submitted",
+      message: `Your transfer of $${amount} to ${recipient} is pending review.`,
+    });
   };
 
   const deposit: Ctx["deposit"] = async (method, amount) => {
