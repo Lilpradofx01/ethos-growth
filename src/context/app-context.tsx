@@ -737,48 +737,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistLoans(user.id, [loan, ...existing]);
     pushTx(user, { type: "loan-submitted", amount: input.amount, status: "pending", note: `Loan application — $${input.amount}`, loanId: loan.id });
     pushNotif(user, { title: "Loan application received", message: "We're reviewing your submission." });
-    // Simulated review pipeline
-    setTimeout(() => {
-      const cur = loadUsers()[user.id];
-      if (!cur) return;
-      const all = ls<Loan[]>(K.loans(cur.id), []);
-      const idx = all.findIndex((l) => l.id === loan.id);
-      if (idx < 0) return;
-      all[idx] = { ...all[idx], status: "under-review" };
-      persistLoans(cur.id, all);
-      pushNotif(cur, { title: "Loan under review", message: "Underwriting has started on your application." });
-    }, 4000);
-    setTimeout(() => {
-      const cur = loadUsers()[user.id];
-      if (!cur) return;
-      const all = ls<Loan[]>(K.loans(cur.id), []);
-      const idx = all.findIndex((l) => l.id === loan.id);
-      if (idx < 0) return;
-      const l = all[idx];
-      const dti = l.finances.monthlyIncome > 0
-        ? (l.finances.monthlyExpenses + l.finances.existingDebts + l.monthlyPayment) / l.finances.monthlyIncome
-        : 1;
-      const incomeOk = l.finances.monthlyIncome >= l.monthlyPayment * 2;
-      if (!incomeOk || dti > 0.5) {
-        all[idx] = { ...l, status: "declined", reason: "Income to debt ratio too high" };
-        persistLoans(cur.id, all);
-        pushTx(cur, { type: "loan-declined", amount: l.amount, status: "failed", note: `Loan declined — ${all[idx].reason}`, loanId: l.id });
-        pushNotif(cur, { title: "Loan declined", message: all[idx].reason! });
-        return;
-      }
-      const next = new Date(); next.setMonth(next.getMonth() + 1);
-      const disbursed: Loan = {
-        ...l, status: "disbursed", disbursedAt: new Date().toISOString(),
-        nextPaymentAt: next.toISOString(),
-      };
-      all[idx] = disbursed;
-      persistLoans(cur.id, all);
-      const withFunds: User = { ...cur, balances: { ...cur.balances, main: cur.balances.main + l.amount } };
-      persistUser(withFunds);
-      pushTx(withFunds, { type: "loan-approved", amount: l.amount, status: "completed", note: `Loan approved — $${l.amount}`, loanId: l.id });
-      pushTx(withFunds, { type: "loan-disbursed", amount: l.amount, to: "main", status: "completed", note: `Loan disbursed to main`, loanId: l.id });
-      pushNotif(withFunds, { title: "Loan approved & disbursed", message: `$${l.amount} deposited to your Main account.` });
-    }, 10000);
+    // Review, approval, and disbursement are performed by admin/backend once
+    // Supabase is connected. Client leaves the loan as "submitted".
     return loan;
   };
 
