@@ -702,55 +702,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistGoals(user.id, all.filter((x) => x.id !== id));
   };
 
-  // Automatic savings runner (real cadences)
-  useEffect(() => {
-    if (!user) return;
-    const CADENCE: Record<GoalMode, number> = {
-      "one-time": 0, manual: 0,
-      daily: 86_400_000, weekly: 604_800_000, monthly: 2_592_000_000,
-    };
-    const tick = () => {
-      const all = ls<Goal[]>(K.goals(user.id), []);
-      const current = loadUsers()[user.id];
-      if (!current) return;
-      let bal = { ...current.balances };
-      let changed = false;
-      const nextGoals = all.map((g) => {
-        if (g.status !== "active") return g;
-        const cadence = CADENCE[g.mode];
-        if (!cadence || !g.autoAmount) return g;
-        const last = g.lastRunAt ? new Date(g.lastRunAt).getTime() : Date.now();
-        if (Date.now() - last < cadence) return g;
-        const need = Math.min(g.autoAmount, g.target - g.saved);
-        if (need <= 0) return g;
-        if (bal.main < need) {
-          changed = true;
-          const failed: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto-failed" };
-          pushNotif(current, { title: "Auto-save skipped", message: `${g.name}: insufficient main balance.` });
-          return { ...g, history: [failed, ...g.history] };
-        }
-        bal = { ...bal, main: bal.main - need, savings: bal.savings + need };
-        changed = true;
-        const entry: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto" };
-        const nextSaved = g.saved + need;
-        const completed = nextSaved >= g.target;
-        pushTx({ ...current, balances: bal }, { type: "savings-auto", amount: need, from: "main", to: "savings", status: "completed", note: `Auto-save: ${g.name}`, goalId: g.id });
-        if (completed) {
-          pushTx({ ...current, balances: bal }, { type: "goal-completed", amount: nextSaved, status: "completed", note: `Goal completed: ${g.name}`, goalId: g.id });
-          pushNotif(current, { title: "Savings goal completed", message: `${g.name} reached its target.` });
-        }
-        return { ...g, saved: nextSaved, lastRunAt: new Date().toISOString(), status: completed ? "completed" as GoalStatus : g.status, history: [entry, ...g.history] };
-      });
-      if (changed) {
-        persistUser({ ...current, balances: bal });
-        persistGoals(user.id, nextGoals);
-      }
-    };
-    const id = setInterval(tick, 30_000);
-    tick();
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  // Note: automatic-cadence savings (daily/weekly/monthly) will be executed by
+  // a server-side scheduler once Supabase is connected. No client-side timer.
 
   const submitLoan: Ctx["submitLoan"] = async (input) => {
     if (!user) throw new Error("Not signed in");
