@@ -1,8 +1,15 @@
 /**
  * AppContext — the single source of truth for auth, wallet, investments,
- * transactions, notifications and theme. Backed by localStorage so users
- * persist across reloads. All mutations are async so a later Supabase swap
- * is a drop-in.
+ * transactions, notifications and theme. Backed by localStorage today.
+ *
+ * Architecture note (future Supabase swap):
+ * - All mutations are async and return Promises.
+ * - No mutation runs on a background timer; every balance/tx change is the
+ *   result of an explicit user action (or, in the future, an admin action
+ *   performed server-side).
+ * - Persistence is isolated to the persist* helpers below. Swapping to
+ *   Supabase means replacing those helpers + login/register with SDK calls
+ *   and subscribing to Realtime — the UI does not need to change.
  */
 import {
   createContext,
@@ -419,16 +426,19 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const externalSend: Ctx["externalSend"] = async (recipient, bank, userEmail, amount) => {
     if (!user) throw new Error("Not signed in");
     if (userEmail.toLowerCase() !== user.email) throw new Error("Email must match your account email");
-    // Simulate: fails after 10s (caller handles the wait). Balance untouched.
+    // Record as pending; a future admin/backend flow will finalize.
     pushTx(user, {
       type: "external_send",
       amount,
       from: "main",
       to: "external",
-      status: "failed",
-      note: `External transfer to ${recipient} (${bank}) — cancelled`,
+      status: "pending",
+      note: `External transfer to ${recipient} (${bank}) — pending review`,
     });
-    pushNotif(user, { title: "Transaction Failed", message: `External send of $${amount} to ${recipient} was cancelled. Contact support.` });
+    pushNotif(user, {
+      title: "External transfer submitted",
+      message: `Your transfer of $${amount} to ${recipient} is pending review.`,
+    });
   };
 
   const deposit: Ctx["deposit"] = async (method, amount) => {
@@ -692,55 +702,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistGoals(user.id, all.filter((x) => x.id !== id));
   };
 
-  // Automatic savings runner (real cadences)
-  useEffect(() => {
-    if (!user) return;
-    const CADENCE: Record<GoalMode, number> = {
-      "one-time": 0, manual: 0,
-      daily: 86_400_000, weekly: 604_800_000, monthly: 2_592_000_000,
-    };
-    const tick = () => {
-      const all = ls<Goal[]>(K.goals(user.id), []);
-      const current = loadUsers()[user.id];
-      if (!current) return;
-      let bal = { ...current.balances };
-      let changed = false;
-      const nextGoals = all.map((g) => {
-        if (g.status !== "active") return g;
-        const cadence = CADENCE[g.mode];
-        if (!cadence || !g.autoAmount) return g;
-        const last = g.lastRunAt ? new Date(g.lastRunAt).getTime() : Date.now();
-        if (Date.now() - last < cadence) return g;
-        const need = Math.min(g.autoAmount, g.target - g.saved);
-        if (need <= 0) return g;
-        if (bal.main < need) {
-          changed = true;
-          const failed: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto-failed" };
-          pushNotif(current, { title: "Auto-save skipped", message: `${g.name}: insufficient main balance.` });
-          return { ...g, history: [failed, ...g.history] };
-        }
-        bal = { ...bal, main: bal.main - need, savings: bal.savings + need };
-        changed = true;
-        const entry: GoalHistory = { id: crypto.randomUUID(), at: new Date().toISOString(), amount: need, type: "auto" };
-        const nextSaved = g.saved + need;
-        const completed = nextSaved >= g.target;
-        pushTx({ ...current, balances: bal }, { type: "savings-auto", amount: need, from: "main", to: "savings", status: "completed", note: `Auto-save: ${g.name}`, goalId: g.id });
-        if (completed) {
-          pushTx({ ...current, balances: bal }, { type: "goal-completed", amount: nextSaved, status: "completed", note: `Goal completed: ${g.name}`, goalId: g.id });
-          pushNotif(current, { title: "Savings goal completed", message: `${g.name} reached its target.` });
-        }
-        return { ...g, saved: nextSaved, lastRunAt: new Date().toISOString(), status: completed ? "completed" as GoalStatus : g.status, history: [entry, ...g.history] };
-      });
-      if (changed) {
-        persistUser({ ...current, balances: bal });
-        persistGoals(user.id, nextGoals);
-      }
-    };
-    const id = setInterval(tick, 30_000);
-    tick();
-    return () => clearInterval(id);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.id]);
+  // Note: automatic-cadence savings (daily/weekly/monthly) will be executed by
+  // a server-side scheduler once Supabase is connected. No client-side timer.
 
   const submitLoan: Ctx["submitLoan"] = async (input) => {
     if (!user) throw new Error("Not signed in");
@@ -774,48 +737,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     persistLoans(user.id, [loan, ...existing]);
     pushTx(user, { type: "loan-submitted", amount: input.amount, status: "pending", note: `Loan application — $${input.amount}`, loanId: loan.id });
     pushNotif(user, { title: "Loan application received", message: "We're reviewing your submission." });
-    // Simulated review pipeline
-    setTimeout(() => {
-      const cur = loadUsers()[user.id];
-      if (!cur) return;
-      const all = ls<Loan[]>(K.loans(cur.id), []);
-      const idx = all.findIndex((l) => l.id === loan.id);
-      if (idx < 0) return;
-      all[idx] = { ...all[idx], status: "under-review" };
-      persistLoans(cur.id, all);
-      pushNotif(cur, { title: "Loan under review", message: "Underwriting has started on your application." });
-    }, 4000);
-    setTimeout(() => {
-      const cur = loadUsers()[user.id];
-      if (!cur) return;
-      const all = ls<Loan[]>(K.loans(cur.id), []);
-      const idx = all.findIndex((l) => l.id === loan.id);
-      if (idx < 0) return;
-      const l = all[idx];
-      const dti = l.finances.monthlyIncome > 0
-        ? (l.finances.monthlyExpenses + l.finances.existingDebts + l.monthlyPayment) / l.finances.monthlyIncome
-        : 1;
-      const incomeOk = l.finances.monthlyIncome >= l.monthlyPayment * 2;
-      if (!incomeOk || dti > 0.5) {
-        all[idx] = { ...l, status: "declined", reason: "Income to debt ratio too high" };
-        persistLoans(cur.id, all);
-        pushTx(cur, { type: "loan-declined", amount: l.amount, status: "failed", note: `Loan declined — ${all[idx].reason}`, loanId: l.id });
-        pushNotif(cur, { title: "Loan declined", message: all[idx].reason! });
-        return;
-      }
-      const next = new Date(); next.setMonth(next.getMonth() + 1);
-      const disbursed: Loan = {
-        ...l, status: "disbursed", disbursedAt: new Date().toISOString(),
-        nextPaymentAt: next.toISOString(),
-      };
-      all[idx] = disbursed;
-      persistLoans(cur.id, all);
-      const withFunds: User = { ...cur, balances: { ...cur.balances, main: cur.balances.main + l.amount } };
-      persistUser(withFunds);
-      pushTx(withFunds, { type: "loan-approved", amount: l.amount, status: "completed", note: `Loan approved — $${l.amount}`, loanId: l.id });
-      pushTx(withFunds, { type: "loan-disbursed", amount: l.amount, to: "main", status: "completed", note: `Loan disbursed to main`, loanId: l.id });
-      pushNotif(withFunds, { title: "Loan approved & disbursed", message: `$${l.amount} deposited to your Main account.` });
-    }, 10000);
+    // Review, approval, and disbursement are performed by admin/backend once
+    // Supabase is connected. Client leaves the loan as "submitted".
     return loan;
   };
 
