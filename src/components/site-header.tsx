@@ -24,7 +24,7 @@ export function SiteHeader() {
             <Link to="/dashboard" className="rounded-lg gradient-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:px-4">Dashboard</Link>
           ) : (
             <>
-              <Link to="/auth" className="hidden rounded-lg px-3 py-2 text-sm xs:inline-flex sm:inline-flex">Sign in</Link>
+              <Link to="/auth" className="hidden rounded-lg px-3 py-2 text-sm sm:inline-flex">Sign in</Link>
               <Link to="/auth" className="rounded-lg gradient-primary px-3 py-2 text-sm font-medium text-primary-foreground sm:px-4">Get started</Link>
             </>
           )}
