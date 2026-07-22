@@ -1,8 +1,15 @@
 /**
  * AppContext — the single source of truth for auth, wallet, investments,
- * transactions, notifications and theme. Backed by localStorage so users
- * persist across reloads. All mutations are async so a later Supabase swap
- * is a drop-in.
+ * transactions, notifications and theme. Backed by localStorage today.
+ *
+ * Architecture note (future Supabase swap):
+ * - All mutations are async and return Promises.
+ * - No mutation runs on a background timer; every balance/tx change is the
+ *   result of an explicit user action (or, in the future, an admin action
+ *   performed server-side).
+ * - Persistence is isolated to the persist* helpers below. Swapping to
+ *   Supabase means replacing those helpers + login/register with SDK calls
+ *   and subscribing to Realtime — the UI does not need to change.
  */
 import {
   createContext,
