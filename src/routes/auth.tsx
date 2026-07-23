@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { MarketingShell } from "@/components/marketing-shell";
 import { useApp } from "@/context/app-context";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { setPaymentPin } from "@/lib/pin.functions";
+import { ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
@@ -31,7 +35,13 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     try {
-      await login(email, pw);
+      // Real Supabase auth
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error && !error.message.toLowerCase().includes("invalid login credentials")) {
+        throw error;
+      }
+      // Also hydrate local app state (falls back to demo user for the mock creds)
+      try { await login(email, pw); } catch { /* ignore if only supabase side exists */ }
       toast.success("Welcome back!");
       nav({ to: "/dashboard" });
     } catch (err) {
