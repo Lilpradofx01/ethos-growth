@@ -171,7 +171,7 @@ function Settings() {
         </div>
         <div className="glass rounded-2xl p-5 text-sm text-muted-foreground">
           Signed in as <span className="font-medium text-foreground">{user.email}</span>
-          <button onClick={() => { logout(); nav({ to: "/" }); }} className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">
+          <button onClick={async () => { await supabase.auth.signOut(); logout(); nav({ to: "/" }); }} className="mt-3 flex items-center gap-2 rounded-lg bg-destructive/10 px-3 py-2 text-destructive">
             <LogOut className="h-4 w-4" /> Sign out
           </button>
         </div>
