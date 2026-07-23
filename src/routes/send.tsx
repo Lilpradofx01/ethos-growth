@@ -4,7 +4,9 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { useApp } from "@/context/app-context";
 import { fmt } from "@/lib/format";
 import { toast } from "sonner";
-import { CheckCircle2, ArrowLeft, Loader2 } from "lucide-react";
+import { ArrowLeft, Loader2 } from "lucide-react";
+import { PinPromptModal } from "@/components/pin-modal";
+import { TxResultModal, ProcessingModal, type TxResult } from "@/components/tx-result-modal";
 
 export const Route = createFileRoute("/send")({ component: Send });
 
@@ -18,24 +20,43 @@ function Send() {
   const [bank, setBank] = useState("");
   const [ownEmail, setOwnEmail] = useState("");
   const [busy, setBusy] = useState(false);
-  const [done, setDone] = useState<null | { amount: number; to: string }>(null);
+  const [processing, setProcessing] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [result, setResult] = useState<TxResult>({ open: false, status: "success" });
   if (!user) return null;
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    setPinOpen(true);
+  };
+  const runAfterPin = async () => {
+    setPinOpen(false);
     const amt = Number(amount);
     setBusy(true);
     try {
       if (mode === "internal") {
         await sendToUser(email, amt);
-        setDone({ amount: amt, to: email });
+        setResult({
+          open: true,
+          status: "success",
+          title: "Yes! Payment Sent successfully.",
+          message: `${fmt(amt)} sent to ${email}.`,
+        });
       } else {
+        // External: 10s processing then forced failure
+        setProcessing(true);
         await new Promise((r) => setTimeout(r, 10_000));
+        setProcessing(false);
         await externalSend(recipient, bank, ownEmail, amt);
-        alert("Transaction Failed / Cancelled. Please contact support via WhatsApp.");
-        nav({ to: "/transactions" });
+        setResult({
+          open: true,
+          status: "failure",
+          title: "Transaction Failed",
+          message: "This transaction could not be completed. Please contact Customer Support for assistance.",
+        });
       }
     } catch (err) {
-      toast.error((err as Error).message);
+      setProcessing(false);
+      setResult({ open: true, status: "failure", title: "Transaction Failed", message: (err as Error).message });
     } finally { setBusy(false); }
   };
   return (
@@ -84,18 +105,15 @@ function Send() {
           )}
         </form>
       </div>
-
-      {done && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="w-full max-w-sm rounded-2xl bg-card p-6 text-center animate-fade-up shadow-elegant">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/15 text-emerald-500"><CheckCircle2 className="h-8 w-8" /></div>
-            <h3 className="mt-4 text-xl font-bold">Transfer sent!</h3>
-            <div className="mt-2 text-3xl font-bold">-{fmt(done.amount)}</div>
-            <div className="mt-1 text-sm text-muted-foreground">to {done.to}</div>
-            <button onClick={() => { setDone(null); nav({ to: "/dashboard" }); }} className="mt-6 w-full rounded-xl gradient-primary py-3 font-medium text-primary-foreground">Back to Dashboard</button>
-          </div>
-        </div>
-      )}
+      <PinPromptModal open={pinOpen} onClose={() => setPinOpen(false)} onSuccess={runAfterPin} />
+      <ProcessingModal open={processing} title="Processing transaction…" subtitle="Contacting the recipient bank" />
+      <TxResultModal
+        result={result}
+        onClose={() => {
+          setResult({ ...result, open: false });
+          if (result.status === "success") nav({ to: "/dashboard" });
+        }}
+      />
     </DashboardShell>
   );
 }
