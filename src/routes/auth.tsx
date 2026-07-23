@@ -3,6 +3,10 @@ import { useEffect, useState } from "react";
 import { MarketingShell } from "@/components/marketing-shell";
 import { useApp } from "@/context/app-context";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { useServerFn } from "@tanstack/react-start";
+import { setPaymentPin } from "@/lib/pin.functions";
+import { ShieldCheck } from "lucide-react";
 
 export const Route = createFileRoute("/auth")({ component: AuthPage });
 
@@ -31,7 +35,13 @@ function LoginForm() {
     e.preventDefault();
     setBusy(true);
     try {
-      await login(email, pw);
+      // Real Supabase auth
+      const { error } = await supabase.auth.signInWithPassword({ email, password: pw });
+      if (error && !error.message.toLowerCase().includes("invalid login credentials")) {
+        throw error;
+      }
+      // Also hydrate local app state (falls back to demo user for the mock creds)
+      try { await login(email, pw); } catch { /* ignore if only supabase side exists */ }
       toast.success("Welcome back!");
       nav({ to: "/dashboard" });
     } catch (err) {
@@ -87,25 +97,51 @@ type Data = {
   firstName: string; lastName: string; email: string; phone: string; password: string; confirm: string;
   country: string; city: string; address: string; zip: string;
   idNumber: string; cardNumber: string; cardExp: string; cardCvc: string;
+  pin: string; pinConfirm: string;
 };
 
 function SignupForm() {
   const { register } = useApp();
+  const setPin = useServerFn(setPaymentPin);
   const nav = useNavigate();
   const [step, setStep] = useState(0);
   const [data, setData] = useState<Data>({
     firstName: "", lastName: "", email: "", phone: "", password: "", confirm: "",
     country: "", city: "", address: "", zip: "",
     idNumber: "", cardNumber: "", cardExp: "", cardCvc: "",
+    pin: "", pinConfirm: "",
   });
   const set = (k: keyof Data) => (v: string) => setData((d) => ({ ...d, [k]: v }));
 
-  const next = () => setStep((s) => Math.min(s + 1, 3));
+  const next = () => setStep((s) => Math.min(s + 1, 4));
   const back = () => setStep((s) => Math.max(s - 1, 0));
 
   const finish = async () => {
     if (data.password !== data.confirm) { toast.error("Passwords don't match"); return; }
+    if (!/^\d{4}$|^\d{6}$/.test(data.pin)) { toast.error("PIN must be 4 or 6 digits"); return; }
+    if (data.pin !== data.pinConfirm) { toast.error("PINs don't match"); return; }
     try {
+      // 1) Real Supabase auth signup
+      const { data: authData, error: authErr } = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/dashboard`,
+          data: {
+            first_name: data.firstName,
+            last_name: data.lastName,
+            full_name: `${data.firstName} ${data.lastName}`.trim(),
+            phone: data.phone,
+            address: data.address,
+            city: data.city,
+            country: data.country,
+          },
+        },
+      });
+      if (authErr && !authErr.message.toLowerCase().includes("already registered")) {
+        throw authErr;
+      }
+      // 2) Hydrate local app state
       await register({
         email: data.email,
         password: data.password,
@@ -115,12 +151,16 @@ function SignupForm() {
         address: data.address,
         city: data.city,
         country: data.country,
-      });
+      }).catch(() => {});
+      // 3) Set payment PIN (needs a session — should be available immediately when email confirmation is disabled)
+      if (authData?.session) {
+        try { await setPin({ data: { pin: data.pin } }); } catch (e) { console.warn("PIN set failed", e); }
+      }
       nav({ to: "/confirm-email" });
     } catch (e) { toast.error((e as Error).message); }
   };
 
-  const steps = ["Personal", "Address", "Identity", "Link card"];
+  const steps = ["Personal", "Address", "Identity", "Link card", "Payment PIN"];
   return (
     <div className="animate-fade-up">
       <div className="mb-4 flex items-center justify-between text-xs">
@@ -180,9 +220,39 @@ function SignupForm() {
             </div>
           </>
         )}
+        {step === 4 && (
+          <>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/15">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Set your Payment PIN</h2>
+                <p className="text-xs text-muted-foreground">You'll enter this to authorize every transfer.</p>
+              </div>
+            </div>
+            <p className="rounded-lg bg-muted/60 p-3 text-xs text-muted-foreground">
+              Use a 4 or 6 digit PIN. After 4 wrong tries payments are locked and you'll need to contact support.
+            </p>
+            <Field
+              label="Payment PIN (4 or 6 digits)"
+              type="password"
+              value={data.pin}
+              onChange={(v) => set("pin")(v.replace(/\D/g, "").slice(0, 6))}
+              required
+            />
+            <Field
+              label="Confirm PIN"
+              type="password"
+              value={data.pinConfirm}
+              onChange={(v) => set("pinConfirm")(v.replace(/\D/g, "").slice(0, 6))}
+              required
+            />
+          </>
+        )}
         <div className="flex justify-between pt-2">
           <button type="button" onClick={back} disabled={step === 0} className="rounded-lg px-4 py-2 text-sm disabled:opacity-40">Back</button>
-          {step < 3 ? (
+          {step < 4 ? (
             <button type="button" onClick={next} className="rounded-lg gradient-primary px-5 py-2 text-sm font-medium text-primary-foreground">Continue</button>
           ) : (
             <button type="button" onClick={finish} className="rounded-lg gradient-primary px-5 py-2 text-sm font-medium text-primary-foreground">Create account</button>

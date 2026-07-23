@@ -4,6 +4,7 @@ import { useApp } from "@/context/app-context";
 import { fmt, shortDate } from "@/lib/format";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { ArrowUpRight, Wallet, Send, Plus, CreditCard, TrendingUp, Inbox } from "lucide-react";
+import { GreetingWeather } from "@/components/greeting-weather";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
@@ -22,6 +23,7 @@ function Dashboard() {
   return (
     <DashboardShell title="Overview">
       <div className="space-y-5">
+        <GreetingWeather name={user.firstName || user.email.split("@")[0]} />
         <div className="rounded-2xl gradient-card p-6 text-white shadow-elegant">
           <div className="flex items-center justify-between">
             <div>
