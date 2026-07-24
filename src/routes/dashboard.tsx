@@ -3,7 +3,7 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { useApp } from "@/context/app-context";
 import { fmt, shortDate } from "@/lib/format";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowUpRight, Wallet, Send, Plus, CreditCard, TrendingUp, Inbox, Eye, EyeOff } from "lucide-react";
+import { ArrowUpRight, Send, Plus, CreditCard, TrendingUp, Inbox, Eye, EyeOff } from "lucide-react";
 import { GreetingWeather } from "@/components/greeting-weather";
 import { useState } from "react";
 
