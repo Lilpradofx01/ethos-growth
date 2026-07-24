@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { MarketingShell } from "@/components/marketing-shell";
 import community from "@/assets/community.jpg";
+import { TestimonialsCarousel } from "@/components/testimonials-carousel";
 import {
   ShieldCheck, TrendingUp, Zap, Globe2, CreditCard, PiggyBank,
   ArrowRight, Star, ChevronDown,
@@ -110,18 +111,9 @@ function Home() {
       {/* TESTIMONIALS */}
       <section className="mx-auto max-w-6xl px-4 py-16">
         <h2 className="text-3xl font-bold tracking-tight">Loved by customers</h2>
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          {[
-            { n: "Priya R.", r: "Finally a bank that treats investing like a first-class citizen." },
-            { n: "Marcus L.", r: "Sent $2,000 abroad, arrived in 8 seconds. Unreal." },
-            { n: "Sofia D.", r: "The Legend Vault paid out exactly what they promised. 12% APY." },
-          ].map((t) => (
-            <div key={t.n} className="glass rounded-2xl p-6">
-              <div className="flex gap-1 text-accent">{Array.from({ length: 5 }).map((_, i) => <Star key={i} className="h-4 w-4 fill-current" />)}</div>
-              <p className="mt-3 text-sm">"{t.r}"</p>
-              <div className="mt-4 text-xs text-muted-foreground">— {t.n}</div>
-            </div>
-          ))}
+        <p className="mt-2 text-muted-foreground">Real stories from CrestVest members around the world.</p>
+        <div className="mt-8">
+          <TestimonialsCarousel />
         </div>
       </section>
 

@@ -3,14 +3,17 @@ import { DashboardShell } from "@/components/dashboard-shell";
 import { useApp } from "@/context/app-context";
 import { fmt, shortDate } from "@/lib/format";
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { ArrowUpRight, Wallet, Send, Plus, CreditCard, TrendingUp, Inbox } from "lucide-react";
+import { ArrowUpRight, Send, Plus, CreditCard, TrendingUp, Inbox, Eye, EyeOff } from "lucide-react";
 import { GreetingWeather } from "@/components/greeting-weather";
+import { useState } from "react";
 
 export const Route = createFileRoute("/dashboard")({ component: Dashboard });
 
 function Dashboard() {
   const { user, txs } = useApp();
+  const [hidden, setHidden] = useState(false);
   if (!user) return null;
+  const mask = (v: string) => (hidden ? "••••••" : v);
   const spending = txs.filter((t) => t.type !== "deposit" && t.status !== "failed").reduce((s, t) => s + t.amount, 0);
   const pie = [
     { name: "Bills", value: spending * 0.35 || 40 },
@@ -28,14 +31,20 @@ function Dashboard() {
           <div className="flex items-center justify-between">
             <div>
               <div className="text-xs opacity-80">Main balance</div>
-              <div className="mt-1 text-4xl font-bold">{fmt(user.balances.main)}</div>
+              <div className="mt-1 text-4xl font-bold">{mask(fmt(user.balances.main))}</div>
               <div className="mt-1 text-xs opacity-70">{user.email}</div>
             </div>
-            <Wallet className="h-8 w-8 opacity-70" />
+            <button
+              onClick={() => setHidden((h) => !h)}
+              aria-label={hidden ? "Show balances" : "Hide balances"}
+              className="grid h-10 w-10 place-items-center rounded-full bg-white/10 backdrop-blur transition hover:bg-white/20"
+            >
+              {hidden ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
           </div>
           <div className="mt-6 grid grid-cols-2 gap-3 text-sm">
-            <Mini label="Savings" value={fmt(user.balances.savings)} />
-            <Mini label="Investment" value={fmt(user.balances.investment)} />
+            <Mini label="Savings" value={mask(fmt(user.balances.savings))} />
+            <Mini label="Investment" value={mask(fmt(user.balances.investment))} />
           </div>
         </div>
 
