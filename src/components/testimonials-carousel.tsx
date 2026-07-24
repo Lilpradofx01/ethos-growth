@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
-type T = { name: string; role: string; quote: string; rating: number; avatar: string };
+type T = { name: string; role: string; quote: string; rating: number };
 
 const ALL: T[] = [
   { name: "Priya Ramanathan", role: "Product Designer, NYC", rating: 5, quote: "Finally a bank that treats investing like a first-class citizen. Clean, fast, honest." },
